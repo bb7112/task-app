@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>tasks</title>
+<meta name="description" content="task tracker with a procrastination score">
+<meta name="theme-color" content="#f4f2ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="tasks">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#fcfbf8; --bg2:#ebe8e1;
+  --card:rgba(255,255,255,.62); --card-solid:#ffffff; --edge:rgba(255,255,255,.9);
+  --ink:#212121; --ink2:#6b6a66; --ink3:#9c9a94; --line:rgba(33,33,33,.09);
+  --field:rgba(255,255,255,.7); --chip:rgba(33,33,33,.05);
+  --good:#2f7d5b; --good-bg:rgba(47,125,91,.1); --bad:#b5432d; --bad-bg:rgba(181,67,45,.1);
+  --bar:#8a7fd6; --save:#d4699a; --warn:#a8741a; --warn-bg:rgba(168,116,26,.12);
+  --shadow:0 10px 30px rgba(60,50,30,.08);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg1:#1a1918; --bg2:#121211;
+    --card:rgba(40,39,37,.7); --card-solid:#262523; --edge:rgba(255,255,255,.06);
+    --ink:#f1efea; --ink2:#a9a69f; --ink3:#77756f; --line:rgba(255,255,255,.08);
+    --field:rgba(255,255,255,.05); --chip:rgba(255,255,255,.07);
+    --good:#6cc49a; --good-bg:rgba(108,196,154,.12); --bad:#ee8a73; --bad-bg:rgba(238,138,115,.12);
+    --bar:#a79ef0; --save:#ec8fba; --warn:#e2b25a; --warn-bg:rgba(226,178,90,.14);
+    --shadow:0 10px 30px rgba(0,0,0,.3);
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:Inter,-apple-system,system-ui,sans-serif;font-size:15px;line-height:1.45;color:var(--ink);
+  background:linear-gradient(180deg,var(--bg1),var(--bg2)) fixed;background-color:var(--bg2);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(40% 30% at 15% 10%,rgba(212,105,154,.13),transparent 70%),
+             radial-gradient(45% 35% at 90% 25%,rgba(138,127,214,.13),transparent 70%),
+             radial-gradient(50% 35% at 50% 95%,rgba(108,196,154,.10),transparent 70%)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--bar);outline-offset:2px}
+.app{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 96px)}
+.view{display:none;flex-direction:column;gap:12px}
+.view.on{display:flex}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px}
+.top h1{font-size:28px;font-weight:300;letter-spacing:-.02em;margin:0}
+.iconbtn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--chip);color:var(--ink)}
+.iconbtn svg{width:19px;height:19px}
+.card{background:var(--card);-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);border:1px solid var(--edge);
+  border-radius:20px;padding:14px 16px;box-shadow:var(--shadow)}
+.card h2{font-size:14px;font-weight:500;margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card h2 .r{font-weight:400;color:var(--ink2);font-size:12.5px}
+.card h2 button{font-weight:400;font-size:12.5px;color:var(--ink2);text-decoration:underline;text-underline-offset:3px}
+.muted{color:var(--ink2)} .faint{color:var(--ink3)} .small{font-size:12.5px}
+.big{font-size:34px;font-weight:300;letter-spacing:-.03em;line-height:1.1}
+.bar{height:6px;border-radius:6px;background:var(--chip);overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;border-radius:6px;background:var(--bar)}
+.score{display:flex;flex-direction:column;gap:2px}
+.score .line{display:flex;align-items:baseline;gap:10px}
+.score .lvl{font-size:14px;font-weight:500}
+.score .bar>i{background:var(--lvl,var(--good))}
+.row{display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+.list .row:first-child{border-top:0}
+.row .body{flex:1;min-width:0}
+.row .name{overflow-wrap:anywhere}
+.row.done .name{color:var(--ink3);text-decoration:line-through}
+.list{margin-top:4px}
+.tick{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--ink3);display:grid;place-items:center;flex:none;color:#fff}
+.tick.on{background:var(--good);border-color:var(--good)}
+.tick svg{width:14px;height:14px}
+.chip{font-size:11.5px;font-weight:500;padding:3px 8px;border-radius:999px;white-space:nowrap;flex:none;font-variant-numeric:tabular-nums}
+.chip.bad{background:var(--bad-bg);color:var(--bad)} .chip.warn{background:var(--warn-bg);color:var(--warn)} .chip.mute{background:var(--chip);color:var(--ink2)}
+.asap{background:var(--bad-bg);border-color:rgba(181,67,45,.18)}
+.asap h2{color:var(--bad)}
+.asap .row{border-top-color:rgba(181,67,45,.14)}
+.asap .tick{border-color:var(--bad)}
+.asap .name{font-weight:500}
+.asap.clear{background:var(--good-bg);border-color:transparent}
+.asap.clear h2,.asap.clear .empty{color:var(--good)}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{padding:7px 13px;border-radius:999px;background:var(--chip);font-size:13.5px;white-space:nowrap}
+.pill.on{background:var(--ink);color:var(--bg1)}
+.pill.red{background:var(--bad-bg);color:var(--bad)}
+.pill.red.on{background:var(--bad);color:#fff}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--chip);border-radius:12px;padding:3px}
+.seg button{padding:8px;border-radius:9px;font-size:14px;color:var(--ink2)}
+.seg button.on{background:var(--card-solid);color:var(--ink);font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.methods{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.method{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 4px 12px;border-radius:16px;background:var(--card);
+  border:1px solid var(--edge);box-shadow:var(--shadow);font-size:12.5px;-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px)}
+.method svg{width:24px;height:24px}
+.method.on{outline:1.5px solid var(--ink)}
+label.f{display:block;font-size:12.5px;color:var(--ink2);margin:0 0 5px 2px}
+.in{width:100%;border:1px solid var(--line);background:var(--field);border-radius:12px;padding:11px 12px;outline:none;font-size:16px}
+.in:focus{border-color:var(--ink3)}
+select.in{appearance:none;-webkit-appearance:none}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:14px;background:var(--ink);color:var(--bg1);font-weight:500;font-size:15.5px}
+.btn.ghost{background:var(--chip);color:var(--ink)}
+.btn.danger{background:var(--bad-bg);color:var(--bad)}
+.btn[disabled]{opacity:.5}
+.link{color:var(--ink);text-decoration:underline;text-underline-offset:3px;font-size:13.5px}
+.err{color:var(--bad);font-size:13px}
+.voice{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0}
+.mic{width:76px;height:76px;border-radius:50%;background:var(--save);color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px rgba(212,105,154,.35)}
+.mic svg{width:32px;height:32px}
+.mic.live{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.08);box-shadow:0 8px 34px rgba(212,105,154,.6)}}
+.said{font-size:15px;text-align:center;min-height:22px;font-style:italic;color:var(--ink2)}
+.empty{text-align:center;padding:14px 8px;color:var(--ink2);font-size:14px}
+.ex .head{display:flex;align-items:center;gap:10px}
+.ex .head b{font-size:14px;font-weight:500}
+.days{display:flex;gap:2px;margin-left:auto}
+.day{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;color:var(--ink3);padding:3px 4px;border-radius:8px}
+.day.sel{background:var(--chip);color:var(--ink)}
+.dot{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--ink3);display:grid;place-items:center;color:#fff}
+.dot.on{background:var(--good);border-color:var(--good)}
+.dot svg{width:9px;height:9px}
+.exrow{display:flex;gap:10px;align-items:center;margin-top:10px}
+.exrow .in{padding:8px 11px}
+.exck{display:flex;align-items:center;gap:8px;font-size:13.5px;flex:none}
+.exchips{display:none;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ex:focus-within .exchips{display:flex}
+.exchips .pill{padding:5px 11px;font-size:12.5px}
+.gbar{height:5px;border-radius:5px;background:var(--chip);overflow:hidden;margin-top:6px}
+.gbar i{display:block;height:100%;background:var(--bar);border-radius:5px}
+.lhead{display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px;text-align:left}
+.lhead b{font-size:15px;font-weight:500;overflow-wrap:anywhere}
+.ladd{display:flex;gap:8px;margin-top:8px}
+.ladd .in{padding:9px 11px}
+.addbtn{width:44px;flex:none;border-radius:12px;background:var(--ink);color:var(--bg1);font-size:22px;font-weight:300}
+.lx{color:var(--ink3);font-size:20px;line-height:1;padding:2px 6px}
+.lfoot{display:flex;justify-content:space-between;margin-top:8px;font-size:13px}
+.lfoot button{color:var(--ink2);text-decoration:underline;text-underline-offset:3px}
+.lfoot .del{color:var(--bad)}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;padding:8px 16px calc(env(safe-area-inset-bottom) + 8px);
+  background:var(--card);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border-top:1px solid var(--line)}
+.nav .in-nav{display:flex;width:100%;max-width:520px;justify-content:space-around}
+.nav a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;color:var(--ink3);text-decoration:none;padding:4px 14px}
+.nav a.on{color:var(--ink)}
+.nav svg{width:23px;height:23px}
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink3)}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--ink3)}
+.sync.ok i{background:var(--good)} .sync.wait i{background:var(--warn)} .sync.off i{background:var(--bad)}
+.sheet-bg{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.32);display:none;align-items:flex-end;justify-content:center}
+.sheet-bg.on{display:flex}
+.sheet{width:100%;max-width:520px;max-height:92vh;overflow:auto;background:var(--bg1);border-radius:22px 22px 0 0;padding:10px 16px calc(env(safe-area-inset-bottom) + 18px);
+  display:flex;flex-direction:column;gap:12px}
+.sheet .grab{width:38px;height:5px;border-radius:5px;background:var(--line);margin:0 auto 4px}
+.sheet h3{margin:0;font-size:19px;font-weight:500}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 86px);transform:translateX(-50%) translateY(20px);opacity:0;z-index:60;
+  background:var(--ink);color:var(--bg1);padding:10px 16px;border-radius:999px;font-size:14px;transition:.25s;pointer-events:none;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.hidden{display:none!important}
+.help p{margin:6px 0 0;font-size:13.5px;color:var(--ink2)}
+@media (prefers-reduced-motion:reduce){.mic.live{animation:none}.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ HOME ============ -->
+  <section class="view" id="v-home">
+    <div class="top">
+      <h1 id="h-day">today</h1>
+      <a class="iconbtn" href="#set" aria-label="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></a>
+    </div>
+    <div class="card score" id="h-score"></div>
+    <div class="card asap" id="h-asap"></div>
+    <div class="card ex" id="h-ex"></div>
+    <div class="pills" id="h-filter">
+      <button class="pill on" data-filter="all">all</button>
+      <button class="pill" data-filter="work">work</button>
+      <button class="pill" data-filter="personal">personal</button>
+    </div>
+    <div class="card" id="h-goals"></div>
+    <div class="card" id="h-up"></div>
+    <div class="sync" id="sync"><i></i><span>saved on this phone</span></div>
+  </section>
+
+  <!-- ============ ADD ============ -->
+  <section class="view" id="v-add">
+    <div class="top"><h1>add</h1></div>
+    <div class="seg" id="a-kind">
+      <button class="on" data-kind="item">task</button>
+      <button data-kind="goal">goal</button>
+    </div>
+    <div class="methods">
+      <button class="method on" data-method="type"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg>type</button>
+      <button class="method" data-method="voice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>voice</button>
+    </div>
+    <div class="card voice hidden" id="a-voice">
+      <button class="mic" id="mic" aria-label="tap and talk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <div class="said" id="said">tap and say it, like “send recap to daniella friday”</div>
+    </div>
+    <div>
+      <label class="f" for="a-text" id="a-text-l">what needs doing</label>
+      <input class="in" id="a-text" autocomplete="off" placeholder="send recap to daniella">
+    </div>
+    <div>
+      <label class="f" id="a-due-l">due</label>
+      <div class="pills" id="a-due">
+        <button class="pill" data-due="0">today</button>
+        <button class="pill" data-due="1">tomorrow</button>
+        <button class="pill" data-due="fri">fri</button>
+        <button class="pill" data-due="mon">next mon</button>
+      </div>
+      <input class="in" type="date" id="a-date" style="margin-top:8px" aria-label="due date">
+    </div>
+    <div class="pills" id="a-area">
+      <button class="pill on" data-area="work">work</button>
+      <button class="pill" data-area="personal">personal</button>
+    </div>
+    <div class="pills" id="a-extra">
+      <button class="pill red" id="a-asap">+ action items</button>
+    </div>
+    <div id="a-goal-w" class="hidden">
+      <label class="f" for="a-goal">goal</label>
+      <select class="in" id="a-goal"></select>
+    </div>
+    <div class="err hidden" id="a-err"></div>
+    <button class="btn" id="a-save">add task</button>
+  </section>
+
+  <!-- ============ LISTS ============ -->
+  <section class="view" id="v-lists">
+    <div class="top"><h1>lists</h1></div>
+    <form class="ladd" id="l-new" style="margin-top:0">
+      <input class="in" id="l-name" autocomplete="off" placeholder="new list, like groceries" aria-label="new list name">
+      <button class="addbtn" type="submit" aria-label="create list">+</button>
+    </form>
+    <div id="l-all" style="display:flex;flex-direction:column;gap:12px"></div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section class="view" id="v-set">
+    <div class="top"><h1>settings</h1><a class="iconbtn" href="#home" aria-label="close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></a></div>
+    <div class="card" style="display:flex;flex-direction:column;gap:10px">
+      <h2>google</h2>
+      <p class="muted small" style="margin:0">connect your tasks sheet so everything saves to your personal google and shows up on your google calendar.</p>
+      <div><label class="f" for="s-url">web app url</label><input class="in" id="s-url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></div>
+      <div><label class="f" for="s-key">passcode</label><input class="in" id="s-key" type="password" autocomplete="off"></div>
+      <button class="btn" id="s-connect">connect</button>
+      <div class="sync" id="s-sync"><i></i><span></span></div>
+    </div>
+    <div class="card help">
+      <h2>how the score works</h2>
+      <p>every task and goal has a due date. done on time costs nothing.</p>
+      <p>each day something is overdue adds 1 point. pushing a due date later adds 1 point.</p>
+      <p>points count for 30 days, then drop off. deleting an overdue task keeps the points it already earned.</p>
+      <p>0 to 4 on it · 5 slipping · 15 procrastinating · 25+ full procrastinator</p>
+      <p>action items are anything overdue, due today or tomorrow, plus anything you add there yourself.</p>
+    </div>
+  </section>
+
+</div>
+
+<nav class="nav"><div class="in-nav">
+  <a href="#home" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>home</a>
+  <a href="#add" data-tab="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/></svg>add</a>
+  <a href="#lists" data-tab="lists"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6h10M10 12h10M10 18h10"/><path d="M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5"/></svg>lists</a>
+</div></nav>
+
+<div class="sheet-bg" id="sheet-bg"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return ymd(d); };
+const diff = (a, b) => Math.round((parse(b) - parse(a)) / 864e5);
+const maxS = (a, b) => a > b ? a : b, minS = (a, b) => a < b ? a : b;
+const today = () => ymd(new Date());
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const CHECK = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5l2.3 2.3L9.5 3.8"/></svg>';
+const s_ = n => n === 1 ? '' : 's';
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('tasks.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('tasks.' + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+};
+
+const S = {
+  items: store.get('items', []),
+  lists: store.get('lists', []),
+  workouts: store.get('workouts', {}),
+  queue: store.get('queue', []),
+  conn: store.get('conn', {url: '', key: ''}),
+  defaultUrl: '',
+  filter: store.get('filter', 'all'),
+  openLists: new Set(store.get('openLists', [])),
+  showDone: false,
+  exDay: today(),
+  sync: 'local',
+};
+const saveLocal = () => { store.set('items', S.items); store.set('lists', S.lists); store.set('workouts', S.workouts); };
+const saveQueue = () => store.set('queue', S.queue);
+
+function toast(msg, ms = 2600) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), ms); }
+
+// ---------------- sync with google ----------------
+const connected = () => !!(S.conn.url && S.conn.key);
+async function api(body) {
+  const r = await fetch(S.conn.url, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify(Object.assign({}, body, {key: S.conn.key}))});
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'something went wrong');
+  return j;
+}
+function setSync(state) {
+  S.sync = state;
+  const label = {local: 'saved on this phone only, connect google in settings', ok: 'synced with google', wait: 'syncing…', off: 'offline, will sync later'}[state];
+  for (const el of [$('#sync'), $('#s-sync')]) { el.className = 'sync ' + state; el.querySelector('span').textContent = label; }
+}
+const opId = o => o.doc ? o.doc.id : o.id;
+let flushing = false;
+function enqueue(op) {
+  // a newer write of the same thing replaces any older one still waiting (never the one being sent)
+  const keep = flushing ? 1 : 0;
+  S.queue = S.queue.filter((o, i) => i < keep || !(o.kind === op.kind && opId(o) === opId(op)));
+  S.queue.push(op); saveQueue(); flush();
+}
+async function flush() {
+  if (!connected()) { setSync('local'); return; }
+  if (flushing) return;
+  flushing = true;
+  try {
+    while (S.queue.length) {
+      setSync('wait');
+      const op = S.queue[0];
+      const res = await api(op);
+      if (res.doc && op.kind === 'item') {
+        const ev = res.doc.eventId || '';
+        const it = S.items.find(x => x.id === res.doc.id);
+        if (it) { it.eventId = ev; saveLocal(); }
+        S.queue.slice(1).forEach(o => { if (o.kind === 'item' && o.doc && o.doc.id === res.doc.id) o.doc.eventId = ev; });
+      }
+      S.queue.shift(); saveQueue();
+    }
+    setSync('ok');
+  } catch (e) {
+    setSync('off');
+    if (/passcode/.test(e.message)) toast('google says the passcode is wrong, check settings');
+  } finally {
+    flushing = false;
+    render();
+  }
+}
+async function pull() {
+  if (!connected()) { setSync('local'); return; }
+  await flush();
+  if (S.queue.length) return;
+  try {
+    setSync('wait');
+    const j = await api({action: 'list'});
+    const d = j.docs || {};
+    S.items = d.item || [];
+    S.lists = d.list || [];
+    S.workouts = {}; (d.workout || []).forEach(w => { S.workouts[w.id] = w; });
+    saveLocal(); setSync('ok'); render();
+  } catch (e) { setSync('off'); }
+}
+const putItem = it => { const i = S.items.findIndex(x => x.id === it.id); i >= 0 ? S.items[i] = it : S.items.push(it); saveLocal(); enqueue({action: 'put', kind: 'item', doc: Object.assign({}, it)}); render(); };
+const delItem = id => { S.items = S.items.filter(x => x.id !== id); saveLocal(); enqueue({action: 'delete', kind: 'item', id}); render(); };
+const putList = l => { const i = S.lists.findIndex(x => x.id === l.id); i >= 0 ? S.lists[i] = l : S.lists.push(l); saveLocal(); enqueue({action: 'put', kind: 'list', doc: JSON.parse(JSON.stringify(l))}); render(); };
+const delList = id => { S.lists = S.lists.filter(x => x.id !== id); saveLocal(); enqueue({action: 'delete', kind: 'list', id}); render(); };
+const putWorkout = w => { S.workouts[w.id] = w; saveLocal(); enqueue(w.did || w.what ? {action: 'put', kind: 'workout', doc: Object.assign({}, w)} : {action: 'delete', kind: 'workout', id: w.id}); renderEx(true); };
+
+// ---------------- score ----------------
+const isGoal = it => it.kind === 'goal';
+const live = it => !it.archived;
+function points(it, T, W) {
+  const end = it.done ? it.doneAt : (it.archived ? it.archivedAt : T);
+  const lo = maxS(it.due, W), hi = minS(end || T, T);
+  const late = hi > lo ? diff(lo, hi) : 0;
+  const pushes = (it.pushes || []).filter(p => p > W && p <= T).length;
+  return late + pushes;
+}
+function scoreAll() {
+  const T = today(), W = addDays(T, -30), s = {work: 0, personal: 0};
+  S.items.forEach(it => { s[it.area === 'personal' ? 'personal' : 'work'] += points(it, T, W); });
+  let streak = 0;
+  if (!S.items.some(it => live(it) && !it.done && it.due < T)) {
+    const done = S.items.filter(it => !isGoal(it) && it.done).sort((a, b) => (b.doneAt + b.doneTs).localeCompare(a.doneAt + a.doneTs));
+    for (const it of done) { if (it.doneAt <= it.due && !(it.pushes || []).length) streak++; else break; }
+  }
+  return Object.assign(s, {total: s.work + s.personal, streak});
+}
+function level(n) {
+  if (n >= 25) return ['full procrastinator', 'bad'];
+  if (n >= 15) return ['procrastinating', 'bad'];
+  if (n >= 5) return ['slipping', 'warn'];
+  return ['on it', 'good'];
+}
+function dueLabel(due) {
+  const n = diff(today(), due);
+  if (n === 0) return 'today'; if (n === 1) return 'tomorrow'; if (n === -1) return 'yesterday';
+  if (n < 0) return `${-n} days ago`;
+  const d = parse(due);
+  if (n < 7) return d.toLocaleDateString(undefined, {weekday: 'short'}).toLowerCase();
+  return d.toLocaleDateString(undefined, {month: 'short', day: 'numeric'}).toLowerCase();
+}
+const isAsap = it => !isGoal(it) && live(it) && !it.done && (it.due <= addDays(today(), 1) || it.starred);
+const inFilter = it => S.filter === 'all' || (it.area || 'work') === S.filter;
+const byDue = (a, b) => a.due.localeCompare(b.due) || (b.starred ? 1 : 0) - (a.starred ? 1 : 0) || a.createdAt - b.createdAt;
+
+// ---------------- home ----------------
+function rowHTML(it, T, W, showArea) {
+  const p = points(it, T, W), meta = [];
+  if (showArea) meta.push(it.area === 'personal' ? 'personal' : 'work');
+  if (it.done) meta.push(it.doneAt > it.due ? `done ${diff(it.due, it.doneAt)} day${s_(diff(it.due, it.doneAt))} late` : 'done on time');
+  else meta.push('due ' + dueLabel(it.due));
+  const g = it.goalId && S.items.find(x => x.id === it.goalId && live(x));
+  if (g) meta.push('→ ' + g.text);
+  if ((it.pushes || []).length) meta.push(`pushed ${it.pushes.length}×`);
+  if (it.starred && !it.done && it.due > addDays(T, 1)) meta.push('added by you');
+  let chip = '';
+  if (p) chip = `<span class="chip ${it.done ? 'mute' : 'bad'}">+${p} pt${s_(p)}</span>`;
+  else if (!it.done && it.due === T) chip = '<span class="chip bad">today</span>';
+  else if (!it.done && it.due === addDays(T, 1)) chip = '<span class="chip warn">tomorrow</span>';
+  return `<div class="row${it.done ? ' done' : ''}" data-item="${esc(it.id)}">
+    <button class="tick${it.done ? ' on' : ''}" data-done="${esc(it.id)}" aria-label="${it.done ? 'mark not done' : 'mark done'}">${it.done ? CHECK : ''}</button>
+    <div class="body"><div class="name">${esc(it.text)}</div><div class="faint small">${esc(meta.join(' · '))}</div></div>${chip}</div>`;
+}
+function renderHome() {
+  const T = today(), W = addDays(T, -30);
+  $('#h-day').textContent = new Date().toLocaleDateString(undefined, {weekday: 'long'}).toLowerCase();
+  const sc = scoreAll(), [lv, tone] = level(sc.total);
+  const el = $('#h-score'); el.style.setProperty('--lvl', `var(--${tone})`);
+  el.innerHTML = `<div class="muted small">procrastination · last 30 days</div>
+    <div class="line"><span class="big">${sc.total}</span><span class="lvl" style="color:var(--${tone})">${lv}</span></div>
+    <div class="bar"><i style="width:${Math.min(100, sc.total / 30 * 100)}%"></i></div>
+    <div class="faint small" style="margin-top:6px">work ${sc.work} · personal ${sc.personal} · ${sc.streak} on time in a row</div>`;
+
+  const asap = S.items.filter(isAsap).sort(byDue);
+  const a = $('#h-asap'); a.classList.toggle('clear', !asap.length);
+  a.innerHTML = `<h2>action items <span class="r" style="color:inherit">${asap.length || ''}</span></h2>` +
+    (asap.length ? `<div class="list">${asap.map(it => rowHTML(it, T, W, true)).join('')}</div>` : '<div class="empty">nothing urgent. tasks land here the day before they’re due.</div>');
+
+  renderEx();
+  $$('#h-filter .pill').forEach(p => p.classList.toggle('on', p.dataset.filter === S.filter));
+
+  const goals = S.items.filter(it => isGoal(it) && live(it) && inFilter(it)).sort((x, y) => (x.done ? 1 : 0) - (y.done ? 1 : 0) || x.due.localeCompare(y.due));
+  $('#h-goals').innerHTML = `<h2>goals <button data-newgoal="1">add goal</button></h2>` + (goals.length ? `<div class="list">${goals.map(gl => {
+    const steps = S.items.filter(x => !isGoal(x) && live(x) && x.goalId === gl.id), fin = steps.filter(x => x.done).length, p = points(gl, T, W);
+    const when = gl.done ? 'reached' : (gl.due < T ? 'target was ' : 'by ') + dueLabel(gl.due);
+    return `<div class="row${gl.done ? ' done' : ''}" data-item="${esc(gl.id)}">
+      <button class="tick${gl.done ? ' on' : ''}" data-done="${esc(gl.id)}" aria-label="${gl.done ? 'mark goal not reached' : 'mark goal reached'}">${gl.done ? CHECK : ''}</button>
+      <div class="body"><div class="name">${esc(gl.text)}</div><div class="faint small">${esc(when)}${S.filter === 'all' ? ' · ' + (gl.area === 'personal' ? 'personal' : 'work') : ''} · ${steps.length ? `${fin} of ${steps.length} tasks done` : 'no tasks linked yet'}</div>
+      <div class="gbar"><i style="width:${steps.length ? fin / steps.length * 100 : 0}%"></i></div></div>${p ? `<span class="chip ${gl.done ? 'mute' : 'bad'}">+${p} pt${s_(p)}</span>` : ''}</div>`;
+  }).join('')}</div>` : '<div class="empty">no goals yet. add one with a target date, then link tasks to it.</div>');
+
+  const open = S.items.filter(it => !isGoal(it) && live(it) && !it.done && !isAsap(it) && inFilter(it)).sort(byDue);
+  const done = S.items.filter(it => !isGoal(it) && live(it) && it.done && inFilter(it)).sort((x, y) => (y.doneAt + y.doneTs).localeCompare(x.doneAt + x.doneTs));
+  $('#h-up').innerHTML = `<h2>upcoming <span class="r">${open.length || ''}</span></h2>` +
+    (open.length ? `<div class="list">${open.map(it => rowHTML(it, T, W, S.filter === 'all')).join('')}</div>` : `<div class="empty">${S.items.length ? 'nothing else coming up.' : 'add your first task from the add tab. every task needs a due date.'}</div>`) +
+    (done.length ? `<div style="margin-top:8px"><button class="link" data-showdone="1">${S.showDone ? 'hide' : 'show'} ${done.length} done</button></div>${S.showDone ? `<div class="list">${done.slice(0, 50).map(it => rowHTML(it, T, W, S.filter === 'all')).join('')}</div>` : ''}` : '');
+}
+
+// ---------------- exercise ----------------
+function renderEx(force) {
+  const box = $('#h-ex');
+  if (!force && box.contains(document.activeElement)) return;
+  const T = today(), w = S.workouts[S.exDay] || {};
+  let streak = 0, d = S.workouts[T] && S.workouts[T].did ? T : addDays(T, -1);
+  while (S.workouts[d] && S.workouts[d].did) { streak++; d = addDays(d, -1); }
+  const week = Array.from({length: 7}, (_, i) => addDays(T, -i)).filter(x => S.workouts[x] && S.workouts[x].did).length;
+  const days = Array.from({length: 7}, (_, i) => addDays(T, i - 6)).map(x => {
+    const on = S.workouts[x] && S.workouts[x].did;
+    return `<button class="day${x === S.exDay ? ' sel' : ''}" data-exday="${x}" aria-label="${parse(x).toDateString()}${on ? ', exercised' : ''}"><span class="dot${on ? ' on' : ''}">${on ? CHECK : ''}</span>${parse(x).toLocaleDateString(undefined, {weekday: 'narrow'}).toLowerCase()}</button>`;
+  }).join('');
+  const focused = document.activeElement && document.activeElement.id === 'ex-what';
+  const val = focused ? document.activeElement.value : (w.what || '');
+  box.innerHTML = `<div class="head"><div><b>exercise</b><div class="faint small" style="white-space:nowrap">${week}/7 · ${streak}d streak</div></div><div class="days">${days}</div></div>
+    <div class="exrow"><button class="exck" data-exdid="1"><span class="tick${w.did ? ' on' : ''}">${w.did ? CHECK : ''}</span>${S.exDay === T ? 'today' : esc(dueLabel(S.exDay))}</button>
+    <input class="in" id="ex-what" autocomplete="off" placeholder="what did you do?" value="${esc(val)}" aria-label="what exercise"></div>
+    <div class="exchips">${['walk', 'run', 'gym', 'pilates', 'yoga', 'bike'].map(c => `<button class="pill${(w.what || '').split(/,\s*/).includes(c) ? ' on' : ''}" data-exchip="${c}">${c}</button>`).join('')}</div>`;
+  if (focused) { const i = $('#ex-what'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+}
+function saveEx(patch) {
+  const cur = S.workouts[S.exDay] || {id: S.exDay, date: S.exDay, did: false, what: ''};
+  putWorkout(Object.assign({}, cur, patch, {id: S.exDay, date: S.exDay}));
+}
+
+// ---------------- add ----------------
+const U = {kind: 'item', area: 'work', due: '', asap: false};
+function quickDate(k) {
+  const T = today(), dow = parse(T).getDay();
+  if (k === '0') return T; if (k === '1') return addDays(T, 1);
+  if (k === 'fri') return addDays(T, ((5 - dow + 7) % 7) || 7);
+  if (k === 'mon') return addDays(T, ((1 - dow + 7) % 7) || 7);
+  return '';
+}
+function goalOptions(area, sel) {
+  const gs = S.items.filter(g => isGoal(g) && live(g) && (g.area || 'work') === area && (!g.done || g.id === sel));
+  return {count: gs.length, html: '<option value="">no goal</option>' + gs.map(g => `<option value="${esc(g.id)}" ${g.id === sel ? 'selected' : ''}>${esc(g.text)}</option>`).join('')};
+}
+function renderAdd() {
+  $$('#a-kind button').forEach(b => b.classList.toggle('on', b.dataset.kind === U.kind));
+  const goal = U.kind === 'goal';
+  $('#a-text-l').textContent = goal ? 'the goal' : 'what needs doing';
+  $('#a-text').placeholder = goal ? 'launch the style quiz' : 'send recap to daniella';
+  $('#a-due-l').textContent = goal ? 'target date' : 'due';
+  $$('#a-due .pill').forEach(p => p.classList.toggle('on', quickDate(p.dataset.due) === U.due));
+  if ($('#a-date').value !== U.due) $('#a-date').value = U.due;
+  $$('#a-area .pill').forEach(p => p.classList.toggle('on', p.dataset.area === U.area));
+  $('#a-extra').classList.toggle('hidden', goal);
+  $('#a-asap').classList.toggle('on', U.asap);
+  $('#a-asap').textContent = U.asap ? '✓ action items' : '+ action items';
+  const sel = $('#a-goal').value, go = goalOptions(U.area, sel);
+  $('#a-goal').innerHTML = go.html;
+  $('#a-goal-w').classList.toggle('hidden', goal || !go.count);
+  $('#a-save').textContent = goal ? 'add goal' : 'add task';
+}
+function setMethod(m) {
+  $$('.method').forEach(b => b.classList.toggle('on', b.dataset.method === m));
+  $('#a-voice').classList.toggle('hidden', m !== 'voice');
+  if (m === 'type') $('#a-text').focus();
+}
+const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+function parseLine(raw) {
+  let t = ' ' + raw.trim() + ' ', due = '', area = '';
+  const low = () => t.toLowerCase();
+  const cut = re => { const m = low().match(re); if (m) t = t.slice(0, m.index) + ' ' + t.slice(m.index + m[0].length); return m; };
+  if (cut(/\s(?:for\s)?(work)[:,]?\s/)) area = 'work';
+  else if (cut(/\s(?:for\s)?(personal)[:,]?\s/)) area = 'personal';
+  const T = today(), dow = parse(T).getDay();
+  let m;
+  if ((m = cut(/\s(?:due\s|by\s|on\s)?(today|tonight)\s/))) due = T;
+  else if ((m = cut(/\s(?:due\s|by\s|on\s)?tomorrow\s/))) due = addDays(T, 1);
+  else if ((m = cut(/\s(?:due\s|by\s)?next week\s/))) due = addDays(T, ((1 - dow + 7) % 7) || 7);
+  else if ((m = cut(/\s(?:due\s|by\s|on\s)?(?:next\s)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\s/))) {
+    const target = DAYS.indexOf(m[1]); due = addDays(T, ((target - dow + 7) % 7) || 7);
+  }
+  return {text: t.replace(/\s+/g, ' ').trim(), due, area};
+}
+function applyParsed(p) {
+  if (p.due) U.due = p.due;
+  if (p.area) U.area = p.area;
+  $('#a-text').value = p.text;
+  renderAdd();
+}
+let rec = null;
+function startVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { $('#said').textContent = 'tap the box below, then the mic on your keyboard and talk'; $('#a-text').focus(); return; }
+  if (rec) { rec.stop(); return; }
+  rec = new SR();
+  rec.lang = 'en-US'; rec.interimResults = true; rec.continuous = false;
+  $('#mic').classList.add('live'); $('#said').textContent = 'listening…';
+  let finalText = '';
+  rec.onresult = ev => { let t = ''; for (const r of ev.results) t += r[0].transcript; $('#said').textContent = '“' + t + '”'; finalText = t; };
+  rec.onerror = ev => {
+    $('#said').textContent = ev.error === 'not-allowed' ? 'mic is blocked, tap the box below and use the keyboard mic instead' : 'didn’t catch that, tap to try again';
+    if (ev.error === 'not-allowed') $('#a-text').focus();
+  };
+  rec.onend = () => { $('#mic').classList.remove('live'); rec = null; if (finalText) applyParsed(parseLine(finalText)); };
+  try { rec.start(); } catch (e) { rec = null; $('#mic').classList.remove('live'); }
+}
+function showErr(msg) { const e = $('#a-err'); e.textContent = msg; e.classList.toggle('hidden', !msg); }
+function saveAdd() {
+  const text = $('#a-text').value.trim();
+  if (!text) { showErr(U.kind === 'goal' ? 'write the goal first' : 'write what needs doing first'); $('#a-text').focus(); return; }
+  if (!U.due) { showErr('pick a due date. everything needs one.'); return; }
+  if (U.due < today()) { showErr('pick today or a later date'); return; }
+  const goal = U.kind === 'goal';
+  const it = {id: uid(), kind: U.kind, text, area: U.area, due: U.due, goalId: goal ? '' : $('#a-goal').value, createdAt: Date.now(),
+    done: false, doneAt: '', doneTs: '', pushes: [], starred: !goal && U.asap, archived: false, archivedAt: '', eventId: ''};
+  putItem(it);
+  toast(`${goal ? 'goal' : 'task'} added · ${U.area} · due ${dueLabel(U.due)}`);
+  $('#a-text').value = ''; U.due = ''; U.asap = false; showErr(''); renderAdd();
+}
+
+// ---------------- edit sheet ----------------
+function openSheet(html) { $('#sheet').innerHTML = '<div class="grab"></div>' + html; $('#sheet-bg').classList.add('on'); }
+function closeSheet() { $('#sheet-bg').classList.remove('on'); $('#sheet').innerHTML = ''; }
+$('#sheet-bg').addEventListener('click', e => { if (e.target.id === 'sheet-bg') closeSheet(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+function openItem(id) {
+  const it = S.items.find(x => x.id === id); if (!it) return;
+  const goal = isGoal(it);
+  let area = it.area || 'work', asap = !!it.starred, armed = false;
+  openSheet(`<h3>${goal ? 'edit goal' : 'edit task'}</h3>
+    <div><label class="f" for="e-text">${goal ? 'the goal' : 'task'}</label><input class="in" id="e-text" value="${esc(it.text)}"></div>
+    <div><label class="f" for="e-due">${goal ? 'target date' : 'due'}</label><input class="in" type="date" id="e-due" value="${esc(it.due)}"></div>
+    <div class="pills" id="e-area"><button class="pill" data-earea="work">work</button><button class="pill" data-earea="personal">personal</button></div>
+    ${goal ? '' : `<div class="pills"><button class="pill red" id="e-asap"></button></div><div id="e-goal-w"><label class="f" for="e-goal">goal</label><select class="in" id="e-goal"></select></div>`}
+    <div class="err hidden" id="e-err"></div>
+    <button class="btn" id="e-save">save changes</button>
+    <button class="btn danger" id="e-del">delete</button>`);
+  const paint = () => {
+    $$('#e-area .pill').forEach(p => p.classList.toggle('on', p.dataset.earea === area));
+    if (!goal) {
+      $('#e-asap').classList.toggle('on', asap); $('#e-asap').textContent = asap ? '✓ in action items' : '+ action items';
+      const go = goalOptions(area, area === (it.area || 'work') ? it.goalId : '');
+      $('#e-goal').innerHTML = go.html; $('#e-goal-w').classList.toggle('hidden', !go.count);
+    }
+    $('#e-del').textContent = armed ? 'tap again to delete' : 'delete';
+  };
+  paint();
+  $$('#e-area .pill').forEach(p => p.onclick = () => { area = p.dataset.earea; paint(); });
+  if (!goal) $('#e-asap').onclick = () => { asap = !asap; paint(); };
+  $('#e-save').onclick = () => {
+    const text = $('#e-text').value.trim(), due = $('#e-due').value, err = $('#e-err');
+    if (!text || !due) { err.textContent = !text ? 'write what it is' : 'everything needs a due date'; err.classList.remove('hidden'); return; }
+    const next = Object.assign({}, it, {text, due, area});
+    if (!goal) Object.assign(next, {starred: asap, goalId: $('#e-goal').value});
+    if (due > it.due && !it.done) { next.pushes = [...(it.pushes || []), today()]; toast('due date pushed · +1 point'); }
+    closeSheet(); putItem(next);
+  };
+  $('#e-del').onclick = () => {
+    if (!armed) { armed = true; paint(); return; }
+    closeSheet();
+    const T = today(), p = points(it, T, addDays(T, -30));
+    if (goal) S.items.filter(x => x.goalId === it.id).forEach(x => putItem(Object.assign({}, x, {goalId: ''})));
+    if (p) { putItem(Object.assign({}, it, {archived: true, archivedAt: T})); toast(`deleted · its ${p} point${s_(p)} stay until they age out`); }
+    else { delItem(it.id); toast('deleted'); }
+  };
+}
+function toggleDone(id) {
+  const it = S.items.find(x => x.id === id); if (!it) return;
+  const T = today();
+  if (!it.done) {
+    putItem(Object.assign({}, it, {done: true, doneAt: T, doneTs: String(Date.now())}));
+    const late = T > it.due ? diff(it.due, T) : 0;
+    if (isGoal(it)) toast(late ? `goal reached, ${late} day${s_(late)} past target` : 'goal reached on time');
+    else toast(late ? `done, ${late} day${s_(late)} late · those points stay for 30 days` : 'done on time · streak +1');
+  } else putItem(Object.assign({}, it, {done: false, doneAt: '', doneTs: ''}));
+}
+
+// ---------------- lists ----------------
+function renderLists() {
+  const all = [...S.lists].sort((a, b) => a.createdAt - b.createdAt);
+  const focusId = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.ladd : null;
+  $('#l-all').innerHTML = all.length ? all.map(l => {
+    const entries = l.entries || [], left = entries.filter(e => !e.done).length, open = S.openLists.has(l.id), checked = entries.length - left;
+    const sorted = [...entries.filter(e => !e.done), ...entries.filter(e => e.done)];
+    return `<div class="card"><button class="lhead" data-ltoggle="${esc(l.id)}" aria-expanded="${open}"><b>${esc(l.name)}</b><span class="faint small">${entries.length ? left + ' left' : 'empty'} ${open ? '▾' : '▸'}</span></button>
+      ${open ? `<div class="list" style="margin-top:6px">${sorted.map(e => `<div class="row${e.done ? ' done' : ''}" style="cursor:default">
+        <button class="tick${e.done ? ' on' : ''}" data-lcheck="${esc(l.id)}|${esc(e.id)}" aria-label="${e.done ? 'uncheck' : 'check off'}">${e.done ? CHECK : ''}</button>
+        <div class="body"><div class="name">${esc(e.text)}</div></div>
+        <button class="lx" data-lremove="${esc(l.id)}|${esc(e.id)}" aria-label="remove ${esc(e.text)}">×</button></div>`).join('')}</div>
+      <form class="ladd" data-lform="${esc(l.id)}"><input class="in" data-ladd="${esc(l.id)}" autocomplete="off" placeholder="add to ${esc(l.name)}" aria-label="add to ${esc(l.name)}"><button class="addbtn" type="submit" aria-label="add">+</button></form>
+      <div class="lfoot"><button data-lclear="${esc(l.id)}" ${checked ? '' : 'disabled'}>${checked ? `clear ${checked} checked` : 'nothing checked'}</button><button class="del" data-ldel="${esc(l.id)}">${delListArmed === l.id ? 'tap again to delete list' : 'delete list'}</button></div>` : ''}</div>`;
+  }).join('') : '<div class="card"><div class="empty">no lists yet. make one for groceries, shopping, packing, anything without a due date. lists don’t count toward your score.</div></div>';
+  if (focusId) { const i = document.querySelector(`[data-ladd="${CSS.escape(focusId)}"]`); if (i) i.focus(); }
+}
+let delListArmed = null;
+const listById = id => S.lists.find(l => l.id === id);
+const saveOpen = () => store.set('openLists', [...S.openLists]);
+
+// ---------------- settings ----------------
+function renderSettings() {
+  if (!$('#v-set').contains(document.activeElement)) {
+    $('#s-url').value = S.conn.url || S.defaultUrl;
+    $('#s-key').value = S.conn.key;
+  }
+}
+
+// ---------------- routing + render ----------------
+const TABS = ['home', 'add', 'lists', 'set'];
+const view = () => { const t = (location.hash || '#home').slice(1); return TABS.includes(t) ? t : 'home'; };
+function route() {
+  const v = view();
+  $$('.view').forEach(s => s.classList.toggle('on', s.id === 'v-' + v));
+  $$('.nav a').forEach(a => a.classList.toggle('on', a.dataset.tab === v || (v === 'set' && a.dataset.tab === 'home')));
+  window.scrollTo(0, 0);
+  render();
+}
+function render() {
+  const v = view();
+  if (v === 'home') renderHome();
+  else if (v === 'add') renderAdd();
+  else if (v === 'lists') renderLists();
+  else renderSettings();
+}
+
+// ---------------- events ----------------
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('button, .row[data-item]');
+  if (!t) return;
+  const d = t.dataset;
+  if (d.done) { toggleDone(d.done); return; }
+  if (d.item) { openItem(d.item); return; }
+  if (d.filter) { S.filter = d.filter; store.set('filter', S.filter); render(); return; }
+  if (d.showdone) { S.showDone = !S.showDone; render(); return; }
+  if (d.newgoal) { U.kind = 'goal'; location.hash = '#add'; return; }
+  if (d.exday) { S.exDay = d.exday; renderEx(true); return; }
+  if (d.exdid) { const w = S.workouts[S.exDay] || {}; saveEx({did: !w.did}); return; }
+  if (d.exchip) {
+    const cur = ((S.workouts[S.exDay] || {}).what || '').split(/,\s*/).filter(Boolean);
+    const what = (cur.includes(d.exchip) ? cur.filter(x => x !== d.exchip) : [...cur, d.exchip]).join(', ');
+    saveEx({what, did: what ? true : !!(S.workouts[S.exDay] || {}).did}); const i = $('#ex-what'); if (i) i.value = what; return;
+  }
+  if (d.kind) { U.kind = d.kind; renderAdd(); return; }
+  if (d.method) { setMethod(d.method); return; }
+  if (d.due) { U.due = quickDate(d.due); showErr(''); renderAdd(); return; }
+  if (d.area && t.closest('#a-area')) { U.area = d.area; renderAdd(); return; }
+  if (t.id === 'a-asap') { U.asap = !U.asap; renderAdd(); return; }
+  if (d.ltoggle) { S.openLists.has(d.ltoggle) ? S.openLists.delete(d.ltoggle) : S.openLists.add(d.ltoggle); saveOpen(); delListArmed = null; renderLists(); return; }
+  if (d.lcheck || d.lremove) {
+    const [lid, eid] = (d.lcheck || d.lremove).split('|'), l = listById(lid); if (!l) return;
+    const entries = d.lcheck ? l.entries.map(e => e.id === eid ? Object.assign({}, e, {done: !e.done}) : e) : l.entries.filter(e => e.id !== eid);
+    putList(Object.assign({}, l, {entries})); return;
+  }
+  if (d.lclear) { const l = listById(d.lclear); if (l) putList(Object.assign({}, l, {entries: l.entries.filter(e => !e.done)})); return; }
+  if (d.ldel) {
+    if (delListArmed !== d.ldel) { delListArmed = d.ldel; renderLists(); return; }
+    delListArmed = null; delList(d.ldel); toast('list deleted'); return;
+  }
+});
+document.addEventListener('submit', ev => {
+  const f = ev.target; ev.preventDefault();
+  if (f.id === 'l-new') {
+    const name = $('#l-name').value.trim(); if (!name) { $('#l-name').focus(); return; }
+    const l = {id: uid(), name, createdAt: Date.now(), entries: []};
+    S.openLists.add(l.id); saveOpen(); $('#l-name').value = ''; putList(l);
+    const i = document.querySelector(`[data-ladd="${CSS.escape(l.id)}"]`); if (i) i.focus();
+    return;
+  }
+  if (f.dataset.lform) {
+    const l = listById(f.dataset.lform), inp = f.querySelector('input'), text = inp.value.trim();
+    if (!l || !text) return;
+    inp.value = '';
+    putList(Object.assign({}, l, {entries: [...(l.entries || []), {id: uid(), text, done: false}]}));
+  }
+});
+let exT;
+document.addEventListener('input', ev => {
+  if (ev.target.id === 'ex-what') {
+    clearTimeout(exT); const v = ev.target.value.trim();
+    exT = setTimeout(() => saveEx({what: v, did: v ? true : !!(S.workouts[S.exDay] || {}).did}), 700);
+  }
+  if (ev.target.id === 'a-text') showErr('');
+});
+document.addEventListener('keydown', ev => { if (ev.target.id === 'ex-what' && ev.key === 'Enter') ev.target.blur(); });
+document.addEventListener('focusout', ev => { if (ev.target.id === 'ex-what') setTimeout(() => renderEx(), 0); });
+$('#a-date').addEventListener('change', e => { U.due = e.target.value; showErr(''); renderAdd(); });
+$('#a-text').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const p = parseLine($('#a-text').value); if (p.due || p.area) applyParsed(p); saveAdd(); } });
+$('#a-text').addEventListener('change', () => { const p = parseLine($('#a-text').value); if (p.due || p.area) applyParsed(p); });
+$('#mic').onclick = startVoice;
+$('#a-save').onclick = () => { const p = parseLine($('#a-text').value); if (p.due || p.area) applyParsed(p); saveAdd(); };
+$('#s-connect').onclick = async () => {
+  const url = $('#s-url').value.trim(), key = $('#s-key').value;
+  if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(url)) { toast('paste the web app url from google apps script'); return; }
+  if (!key) { toast('add your passcode'); return; }
+  const prev = S.conn; S.conn = {url, key};
+  const btn = $('#s-connect'); btn.disabled = true; btn.textContent = 'connecting…';
+  try {
+    await api({action: 'ping'});
+    store.set('conn', S.conn);
+    // first connect: send everything already saved on this phone
+    if (!prev.url) {
+      S.items.forEach(it => S.queue.push({action: 'put', kind: 'item', doc: Object.assign({}, it)}));
+      S.lists.forEach(l => S.queue.push({action: 'put', kind: 'list', doc: JSON.parse(JSON.stringify(l))}));
+      Object.values(S.workouts).forEach(w => S.queue.push({action: 'put', kind: 'workout', doc: Object.assign({}, w)}));
+      saveQueue();
+    }
+    toast('connected to google'); await pull();
+  } catch (e) { S.conn = prev; toast(/passcode/.test(e.message) ? 'wrong passcode' : 'couldn’t reach google, check the url'); }
+  finally { btn.disabled = false; btn.textContent = 'connect'; }
+};
+window.addEventListener('hashchange', route);
+window.addEventListener('online', flush);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { S.exDay = today(); pull(); render(); } });
+
+// ---------------- start ----------------
+route();
+setSync(connected() ? 'wait' : 'local');
+pull();
+setInterval(() => { if (view() === 'home') renderHome(); }, 60000);
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
