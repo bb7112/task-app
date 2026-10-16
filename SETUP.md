@@ -19,13 +19,13 @@ Google `brendaocana08@gmail.com` and GitHub `bb7112`. Nothing First Chair.
 
 ## 2. Put the app online (GitHub Pages, bb7112)
 
-1. On github.com, signed in as **bb7112**, create a new repository called `tasks` (public is fine: none of your tasks are in it, only the app).
+1. On github.com, signed in as **bb7112**, create a new repository called `task-app` (public is fine: none of your tasks are in it, only the app).
 2. Tell Claude when it exists. Claude pushes the code and Pages turns on.
-3. The app is then at **https://bb7112.github.io/tasks/**
+3. The app is then at **https://bb7112.github.io/task-app/**
 
 ## 3. On your iPhone
 
-1. Open https://bb7112.github.io/tasks/ in **Safari**.
+1. Open https://bb7112.github.io/task-app/ in **Safari**.
 2. Tap **Share > Add to Home Screen**.
 3. Open **tasks** from your home screen, then tap the settings icon (top right of home).
 4. Paste the web app URL from step 1.7, type your passcode, and tap **connect**.
